@@ -379,10 +379,12 @@ def create_column_distributions(filtered_df):
             st.write("**Categorical Columns Summary:**")
             cat_summary = []
             for col in categorical_cols[:10]:  # Limit to first 10 categorical columns
+                mode_values = filtered_df[col].mode()
+                most_common = mode_values[0] if len(mode_values) > 0 and not filtered_df[col].empty else 'N/A'
                 cat_summary.append({
                     'Column': col,
                     'Unique Values': filtered_df[col].nunique(),
-                    'Most Common': filtered_df[col].mode()[0] if not filtered_df[col].empty else 'N/A',
+                    'Most Common': most_common,
                     'Missing Values': filtered_df[col].isnull().sum(),
                     'Missing %': f"{(filtered_df[col].isnull().sum() / len(filtered_df) * 100):.1f}%"
                 })
@@ -952,7 +954,8 @@ def create_insights_summary(filtered_df, target_col):
     
     # Demographics insights from filtered data
     if 'age' in filtered_df.columns and not filtered_df['age'].empty:
-        most_common_age = filtered_df['age'].mode()[0] if len(filtered_df['age'].mode()) > 0 else "N/A"
+        mode_values_age = filtered_df['age'].mode()
+        most_common_age = mode_values_age[0] if len(mode_values_age) > 0 and not filtered_df['age'].empty else 'N/A'
         insights.append(f"Most common age group (filtered): **{most_common_age}**")
     
     if 'gender' in filtered_df.columns and not filtered_df['gender'].empty:
@@ -964,14 +967,16 @@ def create_insights_summary(filtered_df, target_col):
     
     # Diagnosis insights from filtered data
     if 'diag_1_group' in filtered_df.columns and not filtered_df['diag_1_group'].empty:
-        most_common_diag = filtered_df['diag_1_group'].mode()[0] if len(filtered_df['diag_1_group'].mode()) > 0 else "N/A"
+        mode_values_diag = filtered_df['diag_1_group'].mode()
+        most_common_diag = mode_values_diag[0] if len(mode_values_diag) > 0 and not filtered_df['diag_1_group'].empty else 'N/A'
         diag_count = (filtered_df['diag_1_group'] == most_common_diag).sum()
         diag_pct = diag_count / len(filtered_df) * 100 if len(filtered_df) > 0 else 0
         insights.append(f"Most common primary diagnosis (filtered): **{most_common_diag}** ({diag_pct:.1f}%)")
 
     if 'diag_2_group' in filtered_df.columns and not filtered_df['diag_2_group'].empty:
-        most_common_diag = filtered_df['diag_2_group'].mode()[0] if len(filtered_df['diag_2_group'].mode()) > 0 else "N/A"
-        diag_count = (filtered_df['diag_2_group'] == most_common_diag).sum()
+        mode_values_diag2 = filtered_df['diag_2_group'].mode()
+        most_common_diag2 = mode_values_diag2[0] if len(mode_values_diag2) > 0 and not filtered_df['diag_2_group'].empty else 'N/A'
+        diag_count = (filtered_df['diag_2_group'] == most_common_diag2).sum()
         diag_pct = diag_count / len(filtered_df) * 100 if len(filtered_df) > 0 else 0
         insights.append(f"Most common secondary diagnosis (filtered): **{most_common_diag}** ({diag_pct:.1f}%)")
 
