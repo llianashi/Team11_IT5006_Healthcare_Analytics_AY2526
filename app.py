@@ -11,7 +11,6 @@ from sklearn.preprocessing import LabelEncoder
 import warnings
 warnings.filterwarnings('ignore')
 
-# Page configuration
 st.set_page_config(
     page_title="Diabetes Hospital Readmission Dashboard",
     page_icon="🏥",
@@ -19,7 +18,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
@@ -113,7 +111,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Data loading and caching
+
 @st.cache_data
 def load_data():
     """Load and preprocess the diabetes dataset"""
@@ -124,18 +122,15 @@ def load_data():
         y_df = diabetes_dataset.data.targets
         df = pd.concat([X_df, y_df], axis=1)
         
-        # Handle missing values and special characters
         for col in df.select_dtypes(include=['object']).columns:
             if '?' in df[col].values:
                 df[col] = df[col].replace('?', np.nan)
         
-        # Add diagnosis grouping
         df = add_diagnosis_groups(df)
         
         return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
-        # Return sample data structure for demonstration
         sample_df = pd.DataFrame({
             'age': ['[50-60)', '[60-70)', '[70-80)'] * 100,
             'gender': ['Male', 'Female'] * 150,
@@ -154,20 +149,16 @@ def map_icd9_to_group(code):
     """Map ICD-9 diagnosis codes to diagnostic groups"""
     if pd.isna(code) or code == '' or str(code).lower() == 'nan':
         return 'Unknown'
-    
-    # Convert to string and handle various formats
+
     code_str = str(code).strip()
     
-    # Remove any trailing decimals like .0
     if '.' in code_str:
         try:
-            # Handle decimal codes
             code_num = float(code_str)
         except:
             return 'Other'
     else:
         try:
-            # Handle integer codes
             code_num = float(code_str)
         except:
             return 'Other'
@@ -266,11 +257,9 @@ def create_column_distributions(filtered_df):
         st.warning("No data available for distribution analysis with current filters")
         return
     
-    # Separate numerical and categorical columns
     numerical_cols = filtered_df.select_dtypes(include=[np.number]).columns.tolist()
     categorical_cols = filtered_df.select_dtypes(include=['object']).columns.tolist()
     
-    # Remove any columns that might cause issues
     exclude_cols = ['encounter_id', 'patient_nbr'] if any(col in filtered_df.columns for col in ['encounter_id', 'patient_nbr']) else []
     numerical_cols = [col for col in numerical_cols if col not in exclude_cols]
     categorical_cols = [col for col in categorical_cols if col not in exclude_cols]
@@ -278,7 +267,6 @@ def create_column_distributions(filtered_df):
     st.subheader(f"📈 Numerical Columns ({len(numerical_cols)} columns)")
     
     if numerical_cols:
-        # User can select which numerical columns to display
         selected_numerical = st.multiselect(
             "Select numerical columns to display:",
             numerical_cols,
@@ -286,7 +274,6 @@ def create_column_distributions(filtered_df):
         )
         
         if selected_numerical:
-            # Create histograms for numerical columns
             num_cols = min(3, len(selected_numerical))
             num_rows = (len(selected_numerical) + num_cols - 1) // num_cols
             
@@ -305,7 +292,6 @@ def create_column_distributions(filtered_df):
                             fig.update_layout(height=400)
                             st.plotly_chart(fig, use_container_width=True, key=f"hist_numerical_{col_name}_{i}_{j}")
                             
-                            # Show basic statistics
                             stats_data = filtered_df[col_name].describe()
                             st.write("**Statistics:**")
                             st.write(f"• Mean: {stats_data['mean']:.2f}")
@@ -319,7 +305,6 @@ def create_column_distributions(filtered_df):
     st.subheader(f"📊 Categorical Columns ({len(categorical_cols)} columns)")
     
     if categorical_cols:
-        # User can select which categorical columns to display
         selected_categorical = st.multiselect(
             "Select categorical columns to display:",
             categorical_cols,
@@ -327,7 +312,6 @@ def create_column_distributions(filtered_df):
         )
         
         if selected_categorical:
-            # Create bar charts for categorical columns
             num_cols = min(2, len(selected_categorical))
             
             for i in range(0, len(selected_categorical), num_cols):
@@ -348,13 +332,11 @@ def create_column_distributions(filtered_df):
                                 fig.update_layout(height=400)
                                 st.plotly_chart(fig, use_container_width=True, key=f"bar_categorical_{col_name}_{i}_{j}")
                                 
-                                # Show basic statistics
                                 st.write("**Statistics:**")
                                 st.write(f"• Unique values: {filtered_df[col_name].nunique()}")
                                 st.write(f"• Most common: {value_counts.index[0]} ({value_counts.iloc[0]} times)")
                                 st.write(f"• Missing values: {filtered_df[col_name].isnull().sum()}")
                                 
-                                # Show top values
                                 if len(value_counts) > 1:
                                     st.write("**Top 5 values:**")
                                     for idx, (val, count) in enumerate(value_counts.head(5).items()):
@@ -363,7 +345,6 @@ def create_column_distributions(filtered_df):
     else:
         st.write("No categorical columns available for distribution analysis.")
     
-    # Summary statistics table
     st.subheader("📋 Summary Statistics")
     
     col1, col2 = st.columns(2)
@@ -378,7 +359,7 @@ def create_column_distributions(filtered_df):
         if categorical_cols:
             st.write("**Categorical Columns Summary:**")
             cat_summary = []
-            for col in categorical_cols[:10]:  # Limit to first 10 categorical columns
+            for col in categorical_cols: 
                 mode_values = filtered_df[col].mode()
                 most_common = mode_values[0] if len(mode_values) > 0 and not filtered_df[col].empty else 'N/A'
                 cat_summary.append({
@@ -397,7 +378,6 @@ def create_demographic_medical_analysis(filtered_df):
     """Create comprehensive demographic and medical analysis using filtered data"""
     st.markdown('<div class="section-header">📊 Demographics & Medical Patterns by Diagnosis</div>', unsafe_allow_html=True)
     
-    # Time in hospital analysis - USING FILTERED DATA
     if all(col in filtered_df.columns for col in ['time_in_hospital', 'age', 'diag_1_group']):
         st.subheader("🏥 Hospital Stay Patterns")
         
@@ -405,13 +385,11 @@ def create_demographic_medical_analysis(filtered_df):
         
         with col1:
             st.write("**By Age & Diagnosis Category (Filtered)**")
-            # Use filtered_df for pivot table
             age_hospital_diag = filtered_df.pivot_table(values='time_in_hospital', 
                                                       index='age', 
                                                       columns='diag_1_group', 
                                                       aggfunc='mean').fillna(0)
             
-            # Select top 5 diagnoses from filtered data
             top_diag = filtered_df['diag_1_group'].value_counts().head(5).index
             age_hospital_subset = age_hospital_diag[top_diag] if len(top_diag) > 0 else age_hospital_diag
             
@@ -428,7 +406,6 @@ def create_demographic_medical_analysis(filtered_df):
         
         with col2:
             st.write("**By Age (Overall - Filtered)**")
-            # Use filtered_df for groupby
             age_hospital = filtered_df.groupby('age')['time_in_hospital'].mean()
             
             if not age_hospital.empty:
@@ -443,7 +420,6 @@ def create_demographic_medical_analysis(filtered_df):
             else:
                 st.write("No data available for current filters")
     
-    # Medications analysis - USING FILTERED DATA
     if all(col in filtered_df.columns for col in ['num_medications', 'gender', 'diag_1_group']):
         st.subheader("💊 Medication Patterns")
         
@@ -451,7 +427,6 @@ def create_demographic_medical_analysis(filtered_df):
         
         with col1:
             st.write("**By Gender & Diagnosis Category (Filtered)**")
-            # Use filtered_df for pivot table
             gender_med_diag = filtered_df.pivot_table(values='num_medications', 
                                                     index='gender', 
                                                     columns='diag_1_group', 
@@ -471,7 +446,6 @@ def create_demographic_medical_analysis(filtered_df):
         
         with col2:
             st.write("**By Gender (Overall - Filtered)**")
-            # Use filtered_df for groupby
             gender_med = filtered_df.groupby('gender')['num_medications'].mean()
             
             if not gender_med.empty:
@@ -486,7 +460,6 @@ def create_demographic_medical_analysis(filtered_df):
             else:
                 st.write("No data available for current filters")
     
-    # Number of diagnoses analysis - USING FILTERED DATA
     if all(col in filtered_df.columns for col in ['number_diagnoses', 'race', 'diag_1_group']):
         st.subheader("🔬 Diagnosis Count Patterns")
         
@@ -494,7 +467,6 @@ def create_demographic_medical_analysis(filtered_df):
         
         with col1:
             st.write("**By Race & Primary Diagnosis (Filtered)**")
-            # Focus on top races from filtered data
             top_races = filtered_df['race'].value_counts().head(5).index
             df_race_subset = filtered_df[filtered_df['race'].isin(top_races)]
             
@@ -538,7 +510,6 @@ def create_demographic_medical_analysis(filtered_df):
             else:
                 st.write("No data available for current filters")
     
-    # Box plots for distributions - USING FILTERED DATA
     if all(col in filtered_df.columns for col in ['time_in_hospital', 'race']):
         st.subheader("📊 Distribution Analysis")
         
@@ -563,8 +534,7 @@ def create_demographic_medical_analysis(filtered_df):
         with col2:
             if 'num_medications' in filtered_df.columns and 'age' in filtered_df.columns:
                 st.write("**Medications Distribution by Age (Filtered)**")
-                key_ages = ['[50-60)', '[60-70)', '[70-80)', '[80-90)']
-                available_ages = [age for age in key_ages if age in filtered_df['age'].unique()]
+                available_ages = filtered_df['age'].unique()
                 df_age_subset = filtered_df[filtered_df['age'].isin(available_ages)]
                 
                 if not df_age_subset.empty and len(df_age_subset) > 10:
@@ -582,22 +552,18 @@ def create_diagnosis_analysis(filtered_df):
     """Create comprehensive diagnosis analysis using filtered data"""
     st.markdown('<div class="section-header">🏥 Diagnosis Pattern Analysis</div>', unsafe_allow_html=True)
     
-    # Check if diagnosis group columns exist
     diag_group_cols = [col for col in filtered_df.columns if col.endswith('_group')]
     
     if not diag_group_cols:
         st.warning("No diagnosis group data available")
         return
     
-    # Overview of diagnosis groups - USING FILTERED DATA
     st.subheader("Diagnosis Categories Overview (Current Filters)")
     
-    # Primary diagnosis analysis - USING FILTERED DATA
     if 'diag_1_group' in filtered_df.columns:
         col1, col2 = st.columns(2)
         
         with col1:
-            # Primary diagnosis distribution from filtered data
             primary_diag = filtered_df['diag_1_group'].value_counts()
             
             if not primary_diag.empty:
@@ -610,8 +576,7 @@ def create_diagnosis_analysis(filtered_df):
                 fig.update_traces(textposition='inside', textinfo='percent+label')
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True, key="pie_primary_diagnosis")
-                
-                # Show statistics from filtered data
+
                 st.write("**Primary Diagnosis Statistics (Filtered):**")
                 for diag, count in primary_diag.head(5).items():
                     pct = (count / len(filtered_df)) * 100
@@ -620,7 +585,6 @@ def create_diagnosis_analysis(filtered_df):
                 st.write("No diagnosis data available for current filters")
         
         with col2:
-            # Primary diagnosis bar chart from filtered data
             if not primary_diag.empty:
                 fig = px.bar(
                     x=primary_diag.values,
@@ -633,11 +597,9 @@ def create_diagnosis_analysis(filtered_df):
                 )
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True, key="bar_primary_diagnosis")
-    
-    # Compare all diagnosis positions - USING FILTERED DATA
+
     st.subheader("Diagnosis Patterns Across Positions (Current Filters)")
     
-    # Create comparison data from filtered data
     if all(col in filtered_df.columns for col in ['diag_1_group', 'diag_2_group', 'diag_3_group']):
         diag_comparison = pd.DataFrame({
             'Primary (diag_1)': filtered_df['diag_1_group'].value_counts(),
@@ -646,7 +608,6 @@ def create_diagnosis_analysis(filtered_df):
         }).fillna(0)
         
         if not diag_comparison.empty:
-            # Stacked bar chart
             fig = px.bar(
                 diag_comparison,
                 title="Diagnosis Categories by Position (Filtered)",
@@ -667,14 +628,11 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
         st.warning("Cannot perform diagnosis-readmission analysis: missing required columns")
         return
     
-    # Readmission rates by primary diagnosis - USING FILTERED DATA
     st.subheader("Readmission Risk by Diagnosis Category (Current Filters)")
     
-    # Calculate readmission rates by diagnosis group from filtered data
     diag_readmit = pd.crosstab(filtered_df['diag_1_group'], filtered_df[target_col], normalize='index') * 100
     
     if not diag_readmit.empty:
-        # Create stacked bar chart
         fig = px.bar(
             diag_readmit,
             title="Readmission Rates by Primary Diagnosis Category (%) - Filtered",
@@ -684,7 +642,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
         fig.update_layout(xaxis_tickangle=-45)
         st.plotly_chart(fig, use_container_width=True, key="bar_readmission_diagnosis")
     
-    # Calculate overall readmission rate FIRST, outside of any column blocks
     overall_readmit_rate = 0
     if target_col in filtered_df.columns and len(filtered_df) > 0:
         overall_readmit_rate = (filtered_df[target_col] == '<30').mean() * 100
@@ -723,7 +680,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Bar chart
             fig = px.bar(
                 gender_readmission,
                 title="Readmission Rate by Gender (%)",
@@ -733,7 +689,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
             st.plotly_chart(fig, use_container_width=True, key="bar_gender_readmission")
         
         with col2:
-            # Show statistics table
             st.write("**Readmission Rates by Gender:**")
             gender_stats = gender_readmission.round(1)
             st.dataframe(gender_stats, use_container_width=True)
@@ -745,7 +700,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Histogram overlayed by readmission status
             fig = px.histogram(
                 filtered_df,
                 x='time_in_hospital',
@@ -760,7 +714,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
             st.plotly_chart(fig, use_container_width=True, key="hist_hospital_readmission")
         
         with col2:
-            # Box plot
             fig = px.box(
                 filtered_df,
                 x=target_col,
@@ -774,8 +727,7 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
     # 4. Diagnosis-specific readmission analysis
     if 'diag_1_group' in filtered_df.columns:
         st.subheader("🔬 Readmission Risk by Diagnosis Category")
-        
-        # Statistical analysis - USING FILTERED DATA
+
         col1, col2 = st.columns(2)
 
         st.write(f"**Overall readmission rate (filtered):** {overall_readmit_rate:.1f}%")
@@ -787,7 +739,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
             # Calculate overall readmission rate for comparison from filtered data
             if target_col in filtered_df.columns:
 
-                # Find diagnosis groups with higher than average readmission from filtered data
                 high_risk_diagnoses = []
                 for diag_group in filtered_df['diag_1_group'].unique():
                     if pd.notna(diag_group) and diag_group != 'Unknown':
@@ -795,7 +746,7 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
                         diag_readmit_rate = (subset[target_col] == '<30').mean() * 100
                         patient_count = len(subset)
                         
-                        if diag_readmit_rate > overall_readmit_rate and patient_count >= 5:  # Reduced minimum sample size for filtered data
+                        if diag_readmit_rate > overall_readmit_rate and patient_count >= 3:  
                             high_risk_diagnoses.append({
                                 'Diagnosis': diag_group,
                                 'Readmission Rate (%)': round(diag_readmit_rate, 1),
@@ -810,7 +761,7 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
                         diag_readmit_rate = (subset[target_col] == '<30').mean() * 100
                         patient_count = len(subset)
                         
-                        if diag_readmit_rate > overall_readmit_rate and patient_count >= 5:  # Reduced minimum sample size for filtered data
+                        if diag_readmit_rate > overall_readmit_rate and patient_count >= 3: 
                             high_risk_diagnoses_2.append({
                                 'Diagnosis': diag_group,
                                 'Readmission Rate (%)': round(diag_readmit_rate, 1),
@@ -842,7 +793,6 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
         with col2:
             st.subheader("Low-Risk Diagnosis Categories (Filtered)")
             
-            # Find diagnosis groups with lower than average readmission from filtered data
             low_risk_diagnoses = []
             for diag_group in filtered_df['diag_1_group'].unique():
                 if pd.notna(diag_group) and diag_group != 'Unknown':
@@ -850,7 +800,7 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
                     diag_readmit_rate = (subset[target_col] == '<30').mean() * 100
                     patient_count = len(subset)
                     
-                    if diag_readmit_rate < overall_readmit_rate and patient_count >= 5:  # Reduced minimum sample size for filtered data
+                    if diag_readmit_rate < overall_readmit_rate and patient_count >= 3:
                         low_risk_diagnoses.append({
                             'Diagnosis': diag_group,
                             'Readmission Rate (%)': round(diag_readmit_rate, 1),
@@ -865,7 +815,7 @@ def create_diagnosis_readmission_analysis(filtered_df, target_col):
                     diag_readmit_rate = (subset[target_col] == '<30').mean() * 100
                     patient_count = len(subset)
                     
-                    if diag_readmit_rate < overall_readmit_rate and patient_count >= 5:  # Reduced minimum sample size for filtered data
+                    if diag_readmit_rate < overall_readmit_rate and patient_count >= 3: 
                         low_risk_diagnoses_2.append({
                             'Diagnosis': diag_group,
                             'Readmission Rate (%)': round(diag_readmit_rate, 1),
@@ -898,11 +848,9 @@ def create_correlation_analysis(filtered_df):
     """Create correlation analysis using filtered data"""
     st.markdown('<div class="section-header">📊 Correlation Analysis</div>', unsafe_allow_html=True)
     
-    # Get numerical columns from filtered data
     numeric_cols = filtered_df.select_dtypes(include=[np.number]).columns.tolist()
     
     if len(numeric_cols) > 1:
-        # Let user select columns for correlation
         selected_cols = st.multiselect(
             "Select columns for correlation analysis:",
             numeric_cols,
@@ -910,10 +858,8 @@ def create_correlation_analysis(filtered_df):
         )
         
         if len(selected_cols) > 1:
-            # Use filtered data for correlation
             correlation_matrix = filtered_df[selected_cols].corr()
             
-            # Create correlation heatmap
             fig = px.imshow(
                 correlation_matrix,
                 title="Correlation Heatmap (Filtered Data)",
@@ -923,7 +869,6 @@ def create_correlation_analysis(filtered_df):
             fig.update_layout(height=600)
             st.plotly_chart(fig, use_container_width=True, key="correlation_heatmap")
             
-            # Show highly correlated pairs from filtered data
             high_corr_pairs = []
             for i in range(len(correlation_matrix.columns)):
                 for j in range(i+1, len(correlation_matrix.columns)):
@@ -949,10 +894,9 @@ def create_insights_summary(filtered_df, target_col):
     """Create insights and summary section using filtered data"""
     st.markdown('<div class="section-header">💡 Key Insights & Recommendations</div>', unsafe_allow_html=True)
     
-    # Key insights from filtered data
     insights = []
     
-    # Demographics insights from filtered data
+    # Demographics insights
     if 'age' in filtered_df.columns and not filtered_df['age'].empty:
         mode_values_age = filtered_df['age'].mode()
         most_common_age = mode_values_age[0] if len(mode_values_age) > 0 and not filtered_df['age'].empty else 'N/A'
@@ -965,7 +909,7 @@ def create_insights_summary(filtered_df, target_col):
             gender_pct = gender_dist.iloc[0] / len(filtered_df) * 100
             insights.append(f"Gender distribution (filtered): **{dominant_gender}** dominates ({gender_pct:.1f}%)")
     
-    # Diagnosis insights from filtered data
+    # Diagnosis insights
     if 'diag_1_group' in filtered_df.columns and not filtered_df['diag_1_group'].empty:
         mode_values_diag = filtered_df['diag_1_group'].mode()
         most_common_diag = mode_values_diag[0] if len(mode_values_diag) > 0 and not filtered_df['diag_1_group'].empty else 'N/A'
@@ -980,7 +924,7 @@ def create_insights_summary(filtered_df, target_col):
         diag_pct = diag_count / len(filtered_df) * 100 if len(filtered_df) > 0 else 0
         insights.append(f"Most common secondary diagnosis (filtered): **{most_common_diag}** ({diag_pct:.1f}%)")
 
-    # Medical insights from filtered data
+    # Medical insights
     if 'time_in_hospital' in filtered_df.columns and not filtered_df['time_in_hospital'].empty:
         avg_stay = filtered_df['time_in_hospital'].mean()
         insights.append(f"Average hospital stay (filtered): **{avg_stay:.1f} days**")
@@ -989,24 +933,24 @@ def create_insights_summary(filtered_df, target_col):
         avg_medications = filtered_df['num_medications'].mean()
         insights.append(f"Average medications per patient (filtered): **{avg_medications:.1f}**")
     
-    # Readmission insights from filtered data
+    # Readmission insights 
     if target_col in filtered_df.columns and not filtered_df[target_col].empty:
         readmit_counts = filtered_df[target_col].value_counts(normalize=True) * 100
         for status, rate in readmit_counts.head(3).items():
             insights.append(f"Readmission - {status} (filtered): **{rate:.1f}%** of patients")
     
-    # Diagnosis-specific readmission insights from filtered data
+    # Diagnosis-specific readmission insights 
     if target_col in filtered_df.columns and 'diag_1_group' in filtered_df.columns and len(filtered_df) > 0:
         overall_readmit_rate = (filtered_df[target_col] == '<30').mean() * 100
         
-        # Find highest risk diagnosis from filtered data
+        # Find highest risk diagnosis
         highest_risk_diag = None
         highest_risk_rate = 0
         
         for diag_group in filtered_df['diag_1_group'].unique():
             if pd.notna(diag_group) and diag_group != 'Unknown':
                 subset = filtered_df[filtered_df['diag_1_group'] == diag_group]
-                if len(subset) >= 5:  # Reduced minimum sample size for filtered data
+                if len(subset) >= 3:
                     diag_readmit_rate = (subset[target_col] == '<30').mean() * 100
                     if diag_readmit_rate > highest_risk_rate:
                         highest_risk_rate = diag_readmit_rate
@@ -1016,7 +960,6 @@ def create_insights_summary(filtered_df, target_col):
             risk_ratio = highest_risk_rate / overall_readmit_rate
             insights.append(f"Highest readmission risk (filtered): **{highest_risk_diag}** ({highest_risk_rate:.1f}%, {risk_ratio:.1f}x average)")
     
-    # Display insights
     col1, col2 = st.columns(2)
     
     with col1:
@@ -1052,33 +995,27 @@ def create_insights_summary(filtered_df, target_col):
             st.write(f"• {rec}")
 
 def main():
-    # Header
     st.markdown('<div class="main-header">🏥 Diabetes Hospital Readmission Dashboard</div>', unsafe_allow_html=True)
     
-    # Load data
     with st.spinner("Loading diabetes dataset..."):
         df = load_data()
     
-    # Sidebar filters
     st.sidebar.header("🔍 Data Filters")
     
     filters = {}
     
-    # Age filter
     if 'age' in df.columns:
         age_options = ['All'] + sorted(df['age'].dropna().unique().tolist())
         filters['age'] = st.sidebar.multiselect("Age Group", age_options, default=['All'])
         if 'All' in filters['age'] or not filters['age']:
             filters['age'] = []
     
-    # Gender filter
     if 'gender' in df.columns:
         gender_options = ['All'] + df['gender'].dropna().unique().tolist()
         filters['gender'] = st.sidebar.selectbox("Gender", gender_options)
         if filters['gender'] == 'All':
             filters['gender'] = []
     
-    # Race filter
     if 'race' in df.columns:
         race_options = ['All'] + sorted(df['race'].dropna().unique().tolist())
         selected_races = st.sidebar.multiselect("Race", race_options, default=['All'])
@@ -1087,7 +1024,6 @@ def main():
         else:
             filters['race'] = selected_races
     
-    # Primary diagnosis filter
     if 'diag_1_group' in df.columns:
         diag_options = ['All'] + sorted([d for d in df['diag_1_group'].dropna().unique().tolist() if d != 'Unknown'])
         selected_diags = st.sidebar.multiselect("Primary Diagnosis Category", diag_options, default=['All'])
@@ -1096,35 +1032,29 @@ def main():
         else:
             filters['diag_1_group'] = selected_diags
     
-    # Readmission status filter
     if 'readmitted' in df.columns:
         readmit_options = ['All'] + df['readmitted'].dropna().unique().tolist()
         filters['readmitted'] = st.sidebar.selectbox("Readmission Status", readmit_options)
         if filters['readmitted'] == 'All':
             filters['readmitted'] = []
     
-    # Apply filters to get filtered data
     filtered_df = get_filtered_data(df, filters)
     
-    # Show filter results
     if len(filtered_df) != len(df):
         st.info(f"🔍 Showing {len(filtered_df):,} of {len(df):,} records after filtering")
     else:
         st.success(f"📊 Showing all {len(df):,} records (no filters applied)")
     
-    # Target column detection
     target_col = 'readmitted'
     if target_col not in filtered_df.columns:
         possible_targets = [col for col in filtered_df.columns if 'readmit' in col.lower()]
         if possible_targets:
             target_col = possible_targets[0]
     
-    # Check if filtered data is empty
     if len(filtered_df) == 0:
         st.error("⚠️ No data available for the current filter selection. Please adjust your filters.")
         return
 
-    # Missing data calculation
     missing_data = filtered_df.isnull().sum()
     missing_percent = (missing_data / len(df)) * 100
     missing_df = pd.DataFrame({
@@ -1133,7 +1063,6 @@ def main():
     }).sort_values('Missing Percentage', ascending=False)
     missing_cols = missing_df[missing_df['Missing Count'] > 0]
 
-    # Main dashboard content
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📊 Overview", 
         "📈 All Distributions",
@@ -1148,15 +1077,12 @@ def main():
         st.subheader("Dataset Overview")
         create_metric_cards(filtered_df, target_col)
         
-        # Data preview
         st.subheader("Data Preview (Current Filters)")
         st.dataframe(filtered_df.head(10), use_container_width=True)
         
-        # Missing Data
         st.subheader("Missing Value Analysis (Current Filters)")
         st.dataframe(missing_cols.head(10), use_container_width=True)
 
-        # Constant Data
         st.subheader("Constant Value Analysis (Current Filters)")
         constant_data = filtered_df.nunique()
         constant_cols = constant_data[constant_data == 1].index.tolist()
@@ -1165,7 +1091,6 @@ def main():
         else:
             st.write("No constant columns found.")
 
-        # Filter summary
         if any(filters.values()):
             st.subheader("Active Filters")
             for filter_name, filter_values in filters.items():
